@@ -29,13 +29,10 @@ if __name__ == "__main__":
             # RL setup
             "multiagent": {
                 "policies": {
-                    "learning_agent": (None, obs_space, act_space, {}),
-                    # "opponent_1": (None, obs_space, act_space, {}),
-                    # "opponent_2": (None, obs_space, act_space, {}),
-                    # "opponent_3": (None, obs_space, act_space, {}),
+                    "default": (None, obs_space, act_space, {}),
                 },
-                "policy_mapping_fn": lambda x: "learning_agent",  # tune.function(policy_mapping_fn),
-                "policies_to_train": ["learning_agent"],
+                "policy_mapping_fn": tune.function(lambda _: "default"),
+                "policies_to_train": ["default"],
             },
             "env": "Soccer",
             "env_config": {

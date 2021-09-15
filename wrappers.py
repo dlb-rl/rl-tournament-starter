@@ -46,17 +46,17 @@ class MultiAgentUnityWrapper(UnityToGymWrapper):
     ):
         """
         Environment initialization
-        :param unity_env: The Unity BaseEnv to be wrapped in the gym. Will be closed when the UnityToGymWrapper closes.
-        :param uint8_visual: Return visual observations as uint8 (0-255) matrices instead of float (0.0-1.0).
-        :param flatten_branched: If True, turn branched discrete action spaces into a Discrete space rather than
-            MultiDiscrete.
-        :param allow_multiple_obs: If True, return a list of np.ndarrays as observations with the first elements
-            containing the visual observations and the last element containing the array of vector observations.
-            If False, returns a single np.ndarray containing either only a single visual observation or the array of
-            vector observations.
-        :param action_space_seed: If non-None, will be used to set the random seed on created gym.Space instances.
-        :termination_mode: A string (enum) suggesting when to end an episode. Supports "ANY", "MAJORITY" and "ALL"
-            which are atributes on `TerminationMode`.
+        Args:
+            unity_env: The Unity BaseEnv to be wrapped in the gym. Will be closed when the UnityToGymWrapper closes.
+            uint8_visual: Return visual observations as uint8 (0-255) matrices instead of float (0.0-1.0).
+            flatten_branched: If True, turn branched discrete action spaces into a Discrete space rather than MultiDiscrete.
+            allow_multiple_obs: If True, return a list of np.ndarrays as observations with the first elements
+                containing the visual observations and the last element containing the array of vector observations.
+                If False, returns a single np.ndarray containing either only a single visual observation or the array of
+                vector observations.
+            action_space_seed: If non-None, will be used to set the random seed on created gym.Space instances.
+            termination_mode: A string (enum) suggesting when to end an episode. Supports "ANY", "MAJORITY" and "ALL"
+                which are atributes on `TerminationMode`.
         """
         self._env = unity_env
 

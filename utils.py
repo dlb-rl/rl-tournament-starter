@@ -10,6 +10,7 @@ def create_env(env_config={}):
     unity_env = UnityEnvironment(
         env_config.get("env_path", "./envs/soccer-ones/soccer-ones.x86_64"),
         no_graphics=not env_config.get("render", False),
+        base_port=env_config.get("base_port", 40039),
         worker_id=env_config.get("worker_id", 0),
         side_channels=[channel],
     )

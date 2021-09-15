@@ -1,4 +1,4 @@
-from utils import create_env, create_rllib_env
+from utils import create_env
 
 
 RUN_1V1 = True
@@ -10,7 +10,7 @@ else:
     print("Running 2v2")
     build_path = "./envs/soccer-twos/soccer-twos.x86_64"
 
-env = create_rllib_env({"render": True, "env_path": build_path})
+env = create_env({"render": True, "env_path": build_path})
 print("Observation Space: ", env.observation_space.shape)
 print("Action Space: ", env.action_space.shape)
 team0_reward = 0
