@@ -1,41 +1,17 @@
 import ray
 from ray import tune
-from mlagents_envs.environment import UnityEnvironment
-from mlagents_envs.side_channel.engine_configuration_channel import (
-    EngineConfigurationChannel,
-)
 
-from wrappers import RLLibWrapper
+from utils import create_rllib_env
 
 
-ENVS_PER_WORKER = 1
+NUM_ENVS_PER_WORKER = 1
 
 
 if __name__ == "__main__":
     ray.init()
 
-    def create_env(env_config=None):
-        worker_id = (
-            env_config.worker_index * ENVS_PER_WORKER + env_config.vector_index
-            if env_config is not None
-            else 0
-        )
-        # TODO update this with the correct env path on your system (the one you downloaded separately)
-        build_path = "/home/bryan/Documents/rl/env_baselines/unity/soccer/envs/soccer-ones/soccer-ones.x86_64"
-        channel = EngineConfigurationChannel()
-        unity_env = UnityEnvironment(
-            build_path,
-            no_graphics=True,
-            worker_id=worker_id,
-            side_channels=[channel],
-        )
-        channel.set_configuration_parameters(
-            time_scale=20, quality_level=0, target_frame_rate=-1, capture_frame_rate=60
-        )
-        return RLLibWrapper(unity_env, allow_multiple_obs=False)
-
-    tune.registry.register_env("Soccer", create_env)
-    temp_env = create_env()
+    tune.registry.register_env("Soccer", create_rllib_env)
+    temp_env = create_rllib_env()
     obs_space = temp_env.observation_space
     act_space = temp_env.action_space
     temp_env.close()
@@ -47,7 +23,7 @@ if __name__ == "__main__":
             # system settings
             "num_gpus": 1,
             "num_workers": 6,
-            "num_envs_per_worker": ENVS_PER_WORKER,
+            "num_envs_per_worker": NUM_ENVS_PER_WORKER,
             "log_level": "INFO",
             "framework": "torch",
             # RL setup
@@ -62,6 +38,11 @@ if __name__ == "__main__":
                 "policies_to_train": ["learning_agent"],
             },
             "env": "Soccer",
+            "env_config": {
+                # TODO update this with the correct env path on your system (the one you downloaded separately)
+                "env_path": "/home/bryan/Documents/rl/env_baselines/unity/soccer/envs/soccer-ones/soccer-ones.x86_64",
+                "num_envs_per_worker": NUM_ENVS_PER_WORKER,
+            },
         },
         stop={
             "training_iteration": 10000,

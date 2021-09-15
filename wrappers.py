@@ -308,5 +308,5 @@ class MultiAgentUnityWrapper(UnityToGymWrapper):
             return self._single_step(decision_step)
 
 
-class RLLibWrapper(MultiAgentUnityWrapper, MultiAgentEnv):
+class RLLibWrapper(gym.core.Wrapper, MultiAgentEnv):
     pass
