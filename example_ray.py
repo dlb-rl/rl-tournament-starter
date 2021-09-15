@@ -32,7 +32,7 @@ if __name__ == "__main__":
         channel.set_configuration_parameters(
             time_scale=20, quality_level=0, target_frame_rate=-1, capture_frame_rate=60
         )
-        return RLLibWrapper(unity_env, allow_multiple_obs=True)
+        return RLLibWrapper(unity_env, allow_multiple_obs=False)
 
     tune.registry.register_env("Soccer", create_env)
     temp_env = create_env()

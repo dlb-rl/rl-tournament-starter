@@ -20,7 +20,7 @@ unity_env = UnityEnvironment(build_path, no_graphics=False, side_channels=[chann
 channel.set_configuration_parameters(
     time_scale=20, quality_level=0, target_frame_rate=-1, capture_frame_rate=60
 )
-env = MultiAgentUnityWrapper(unity_env=unity_env, allow_multiple_obs=True)
+env = MultiAgentUnityWrapper(unity_env=unity_env, allow_multiple_obs=False)
 
 print("Observation Space: ", env.observation_space.shape)
 print("Action Space: ", env.action_space.shape)
