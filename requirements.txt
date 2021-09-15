@@ -3,3 +3,4 @@ gym-unity==0.27.0
 mlagents==0.27.0
 mlagents-envs==0.27.0
 numpy==1.19.5
+ray==1.4.0
