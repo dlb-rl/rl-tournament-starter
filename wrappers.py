@@ -1,5 +1,6 @@
 from typing import Any, Dict, List, Optional, Tuple, Union
 
+from ray.rllib import MultiAgentEnv
 import numpy as np
 import gym
 from gym import spaces
@@ -229,9 +230,15 @@ class MultiAgentUnityWrapper(UnityToGymWrapper):
                 rew_dict[agent_id] = r
                 done_dict[agent_id] = d
                 info_dict[agent_id] = i
+            done_dict["__all__"] = max(done_dict.values())
             return obs_dict, rew_dict, done_dict, info_dict
         else:
             return self.get_step_results(self.name)
+
+    def _single_step(self, info: Union[DecisionSteps, TerminalSteps]) -> GymStepResult:
+        obs, rew, done, _info = super()._single_step(info)
+        rew += info.group_reward[0]
+        return obs, rew, done, _info
 
     # < multiagent mod >
     def detect_game_over(self, terminal_steps: List[TerminalSteps]) -> bool:
@@ -299,3 +306,7 @@ class MultiAgentUnityWrapper(UnityToGymWrapper):
             return out
         else:
             return self._single_step(decision_step)
+
+
+class RLLibWrapper(MultiAgentUnityWrapper, MultiAgentEnv):
+    pass
