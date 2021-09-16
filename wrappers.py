@@ -38,9 +38,9 @@ class MultiAgentUnityWrapper(UnityToGymWrapper):
     def __init__(
         self,
         unity_env: BaseEnv,
+        allow_multiple_obs: bool = False,
         uint8_visual: bool = False,
         flatten_branched: bool = False,
-        allow_multiple_obs: bool = False,
         action_space_seed: Optional[int] = None,
         termination_mode: str = TerminationMode.ANY,
     ):
@@ -50,10 +50,7 @@ class MultiAgentUnityWrapper(UnityToGymWrapper):
             unity_env: The Unity BaseEnv to be wrapped in the gym. Will be closed when the UnityToGymWrapper closes.
             uint8_visual: Return visual observations as uint8 (0-255) matrices instead of float (0.0-1.0).
             flatten_branched: If True, turn branched discrete action spaces into a Discrete space rather than MultiDiscrete.
-            allow_multiple_obs: If True, return a list of np.ndarrays as observations with the first elements
-                containing the visual observations and the last element containing the array of vector observations.
-                If False, returns a single np.ndarray containing either only a single visual observation or the array of
-                vector observations.
+            allow_multiple_obs: Only here for backwards compatibility. Has no effect.
             action_space_seed: If non-None, will be used to set the random seed on created gym.Space instances.
             termination_mode: A string (enum) suggesting when to end an episode. Supports "ANY", "MAJORITY" and "ALL"
                 which are atributes on `TerminationMode`.
@@ -71,7 +68,6 @@ class MultiAgentUnityWrapper(UnityToGymWrapper):
         self._flattener = None
         # Hidden flag used by Atari environments to determine if the game is over
         self.game_over = False
-        self._allow_multiple_obs = allow_multiple_obs
 
         # < multiagent mod > (removed len check)
         # When to stop the game, considering all agents
@@ -95,16 +91,6 @@ class MultiAgentUnityWrapper(UnityToGymWrapper):
             )
         else:
             self.uint8_visual = uint8_visual
-        if (
-            self._get_n_vis_obs() + self._get_vec_obs_size() >= 2
-            and not self._allow_multiple_obs
-        ):
-            logger.warning(
-                "The environment contains multiple observations. "
-                "You must define allow_multiple_obs=True to receive them all. "
-                "Otherwise, only the first visual observation (or vector observation if"
-                "there are no visual observations) will be provided in the observation."
-            )
 
         # Check for number of agents in scene.
         self._env.reset()
@@ -146,21 +132,29 @@ class MultiAgentUnityWrapper(UnityToGymWrapper):
             self._action_space.seed(action_space_seed)
 
         # Set observations space
+        # get visual obs
         list_spaces: List[gym.Space] = []
-        shapes = self._get_vis_obs_shape()
-        for shape in shapes:
-            if uint8_visual:
-                list_spaces.append(spaces.Box(0, 255, dtype=np.uint8, shape=shape))
-            else:
-                list_spaces.append(spaces.Box(0, 1, dtype=np.float32, shape=shape))
+        self._has_vis_obs = False
+        if self._get_n_vis_obs() > 0:
+            self._has_vis_obs = True
+            shapes = self._get_vis_obs_shape()
+            for shape in shapes:
+                if uint8_visual:
+                    list_spaces.append(spaces.Box(0, 255, dtype=np.uint8, shape=shape))
+                else:
+                    list_spaces.append(spaces.Box(0, 1, dtype=np.float32, shape=shape))
+        # get vector obs
+        self._has_vec_obs = False
         if self._get_vec_obs_size() > 0:
-            # vector observation is last
-            high = np.array([np.inf] * self._get_vec_obs_size())
-            list_spaces.append(spaces.Box(-high, high, dtype=np.float32))
-        if self._allow_multiple_obs:
-            self._observation_space = spaces.Tuple(list_spaces)
-        else:
-            self._observation_space = list_spaces[0]  # only return the first one
+            self._has_vec_obs = True
+            vec_space = spaces.Box(
+                -np.inf, np.inf, dtype=np.float32, shape=(self._get_vec_obs_size(),)
+            )
+            list_spaces.append(vec_space)
+
+        self._observation_space = (
+            spaces.Tuple(list_spaces) if len(list_spaces) > 1 else list_spaces[0]
+        )
 
     def reset(self) -> Union[Dict[int, np.ndarray], np.ndarray]:
         """Resets the state of the environment and returns an initial observation.
@@ -211,6 +205,7 @@ class MultiAgentUnityWrapper(UnityToGymWrapper):
             assert (
                 type(action) is dict
             ), "The environment requires a dictionary for multi-agent setting."
+            # NOTE: for soccer env agent_id refers to team_id
             for agent_id in action:
                 self.set_action(action[agent_id], self.agent_prefix + str(agent_id))
         else:
@@ -235,10 +230,25 @@ class MultiAgentUnityWrapper(UnityToGymWrapper):
         else:
             return self.get_step_results(self.name)
 
+    # < multiagent mod > (append all vector obs)
     def _single_step(self, info: Union[DecisionSteps, TerminalSteps]) -> GymStepResult:
-        obs, rew, done, _info = super()._single_step(info)
-        rew += info.group_reward[0]
-        return obs, rew, done, _info
+        observations = []
+        if self._has_vis_obs:
+            # gather visual observations
+            for obss in self._get_vis_obs_list(info):
+                observations.append([self._preprocess_single(obs) for obs in obss])
+            self.visual_obs = observations[0][0]  # last frame, used in render()
+        if self._has_vec_obs:
+            # gather vector observations
+            vector_obs = self._get_vector_obs(info)
+            observations.append(vector_obs)
+
+        observations = tuple(observations) if len(observations) > 1 else observations[0]
+        rewards = [
+            info.reward[i] + info.group_reward[i] for i in range(len(info.reward))
+        ]
+        done = isinstance(info, TerminalSteps)
+        return observations, rewards, done, {"step": info}
 
     # < multiagent mod >
     def detect_game_over(self, terminal_steps: List[TerminalSteps]) -> bool:

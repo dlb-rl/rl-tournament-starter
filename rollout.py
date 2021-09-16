@@ -1,6 +1,5 @@
-from ray import tune
 from agent_ray import RayAgent
-from utils import create_env, create_rllib_env
+from utils import create_env
 
 
 agent1 = RayAgent(
