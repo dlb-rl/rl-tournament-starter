@@ -33,6 +33,10 @@ class MultiAgentUnityWrapper(UnityToGymWrapper):
     [1]: https://github.com/Unity-Technologies/ml-agents/blob/56e6d333a52863785e20c34d89faadf0a115d320/gym-unity/gym_unity/envs/__init__.py
     [2]: https://github.com/laszukdawid/ai-traineree/blob/a9d89b458e40724211d4a0cc8331886dead3eb57/ai_traineree/tasks.py#L260
     [3]: https://github.com/Unity-Technologies/ml-agents/issues/4120
+
+    Here, agents are `members` distributed in `groups`. Members are actual agents,
+    while groups are logical grouping of behaviors. For example, a team on "SoccerTwos"
+    would be a team of two members (agents).
     """
 
     def __init__(
@@ -76,7 +80,7 @@ class MultiAgentUnityWrapper(UnityToGymWrapper):
 
         self.name = list(self._env.behavior_specs.keys())[0]
         # < multiagent mod > (added agent_prefix)
-        self.agent_prefix = self.name[: self.name.index("=") + 1]
+        self.group_prefix = self.name[: self.name.index("=") + 1]
         self.group_spec = self._env.behavior_specs[self.name]
 
         if self._get_n_vis_obs() == 0 and self._get_vec_obs_size() == 0:
@@ -96,7 +100,7 @@ class MultiAgentUnityWrapper(UnityToGymWrapper):
         self._env.reset()
         decision_steps, _ = self._env.get_steps(self.name)
         # < multiagent mod > (removed len check)
-        self.num_agents = len(self._env.behavior_specs)
+        self.num_groups = len(self._env.behavior_specs)
         self._previous_decision_step = decision_steps
 
         # Set action spaces
@@ -164,21 +168,22 @@ class MultiAgentUnityWrapper(UnityToGymWrapper):
         """
         self._env.reset()
         # < multiagent mod >
-        if self.num_agents > 1:
-            states = {}
-            for agent_id in range(self.num_agents):
+        if self.num_groups > 1:
+            obs_dict = {}
+            for group_id in range(self.num_groups):
                 decision_step, _ = self._env.get_steps(
-                    self.agent_prefix + str(agent_id)
+                    self.group_prefix + str(group_id)
                 )
                 self.game_over = False
-                res: GymStepResult = self._single_step(decision_step)
-                states[agent_id] = res[0]
-            return states
+                obs, *_ = self._single_step(decision_step)
+                for member_id in obs:
+                    obs_dict[group_id * len(obs) + member_id] = obs[member_id]
+            return obs_dict
         else:
             decision_step, _ = self._env.get_steps(self.name)
             self.game_over = False
-            res: GymStepResult = self._single_step(decision_step)
-            return res[0]  # res contains tuple with `state` on first pos
+            obs, *_ = self._single_step(decision_step)
+            return obs  # res contains tuple with `state` on first pos
 
     def step(self, action: Union[Dict[int, List[Any]], List[Any]]) -> GymStepResult:
         """Run one timestep of the environment's dynamics. When end of
@@ -201,15 +206,18 @@ class MultiAgentUnityWrapper(UnityToGymWrapper):
             )
 
         # < multiagent mod >
-        if self.num_agents > 1:
+        if self.num_groups > 1:
             assert (
                 type(action) is dict
             ), "The environment requires a dictionary for multi-agent setting."
-            # NOTE: for soccer env agent_id refers to team_id
-            for agent_id in action:
-                self.set_action(action[agent_id], self.agent_prefix + str(agent_id))
+            num_group_members = len(action) // self.num_groups
+            for group_id in range(self.num_groups):
+                group_actions = []
+                for i in range(num_group_members):
+                    group_actions.append(action[group_id * num_group_members + i])
+                self._set_action(group_actions, self.group_prefix + str(group_id))
         else:
-            self.set_action(action, self.name)
+            self._set_action(action, self.name)
 
         self._env.step()
 
@@ -217,70 +225,58 @@ class MultiAgentUnityWrapper(UnityToGymWrapper):
         if type(action) is dict:
             obs_dict = {}
             rew_dict = {}
-            done_dict = {}
             info_dict = {}
-            for agent_id in action:
-                o, r, d, i = self.get_step_results(self.agent_prefix + str(agent_id))
-                obs_dict[agent_id] = o
-                rew_dict[agent_id] = r
-                done_dict[agent_id] = d
-                info_dict[agent_id] = i
-            done_dict["__all__"] = max(done_dict.values())
+            done = False  # done here is treated environment-wise
+            for group_id in range(self.num_groups):
+                o, r, d, i = self._get_step_results(self.group_prefix + str(group_id))
+                for member_id in o:
+                    obs_dict[group_id * len(o) + member_id] = o[member_id]
+                    rew_dict[group_id * len(o) + member_id] = r[member_id]
+                # done and info uses team-wise info
+                done = done or d
+                info_dict[group_id] = i
+            done_dict = {"__all__": done}
             return obs_dict, rew_dict, done_dict, info_dict
         else:
-            return self.get_step_results(self.name)
+            return self._get_step_results(self.name)
 
     # < multiagent mod > (append all vector obs)
     def _single_step(self, info: Union[DecisionSteps, TerminalSteps]) -> GymStepResult:
         observations = []
         if self._has_vis_obs:
             # gather visual observations
+            vis_obs = []
             for obss in self._get_vis_obs_list(info):
-                observations.append([self._preprocess_single(obs) for obs in obss])
-            self.visual_obs = observations[0][0]  # last frame, used in render()
+                vis_obs.append([self._preprocess_single(obs) for obs in obss])
+            # frame from first agent (group 0, member 0), used in render()
+            self.visual_obs = vis_obs[0][0]
+            observations.append(vis_obs)
         if self._has_vec_obs:
             # gather vector observations
             vector_obs = self._get_vector_obs(info)
             observations.append(vector_obs)
 
-        observations = tuple(observations) if len(observations) > 1 else observations[0]
-        rewards = [
-            info.reward[i] + info.group_reward[i] for i in range(len(info.reward))
-        ]
+        # create dicts like {member_id: info} for member_id in group_id
+        observations = {
+            i: (
+                tuple(observations[0][i], observations[1][i])
+                if len(observations) > 1
+                else observations[0][i]
+            )
+            for i in range(len(observations[0]))
+        }
+        rewards = {
+            i: info.reward[i] + info.group_reward[i] for i in range(len(info.reward))
+        }
         done = isinstance(info, TerminalSteps)
-        return observations, rewards, done, {"step": info}
+        info = {"step": info}
+        return observations, rewards, done, info
 
-    # < multiagent mod >
-    def detect_game_over(self, terminal_steps: List[TerminalSteps]) -> bool:
-        """Determine whether the episode has finished.
-
-        Expects the `terminal_steps` to contain only steps that terminated. Note that other steps
-        are possible in the same iteration.
-        This is to keep consistent with Unity's framework but likely will go through refactoring.
-
-        Args:
-            terminal_steps (list): list of all the steps that terminated.
-        """
-        if self.termination_mode == TerminationMode.ANY and len(terminal_steps) > 0:
-            return True
-        elif (
-            self.termination_mode == TerminationMode.MAJORITY
-            and len(terminal_steps) > 0.5 * self.num_agents
-        ):
-            return True
-        elif (
-            self.termination_mode == TerminationMode.ALL
-            and len(terminal_steps) == self.num_agents
-        ):
-            return True
-        else:
-            return False
-
-    def set_action(self, action: List[Any], agent_name: str) -> None:
-        """Sets the action for an agent within the environment.
+    def _set_action(self, action: List[Any], group_name: str) -> None:
+        """Sets the action for an group within the environment.
         Args:
             action (list): the action to take
-            agent_name (str): the name of the agent to set the action for
+            group_name (str): the name of the group to set the action for
         """
 
         if self._flattener is not None:
@@ -295,27 +291,50 @@ class MultiAgentUnityWrapper(UnityToGymWrapper):
         else:
             action_tuple.add_discrete(action)
 
-        self._env.set_actions(agent_name, action_tuple)
+        self._env.set_actions(group_name, action_tuple)
 
-    def get_step_results(self, agent_name: str) -> GymStepResult:
+    def _get_step_results(self, group_name: str) -> GymStepResult:
         """Returns the observation, reward and whether the episode is over after taking the action.
         Args:
-            agent_name (str): the name of the agent to get the step results for
+            group_name (str): the name of the group to get the step results for
         Returns:
-            observation (object/list): agent's observation of the current environment
+            observation (object/list): group's observation of the current environment
             reward (float/list) : amount of reward returned after previous action
             done (boolean/list): whether the episode has ended.
             info (dict): contains auxiliary diagnostic information.
         """
-        decision_step, terminal_step = self._env.get_steps(agent_name)
+        decision_step, terminal_step = self._env.get_steps(group_name)
 
-        if self.detect_game_over(terminal_step):
+        if self._detect_game_over(terminal_step):
             self.game_over = True
             out = self._single_step(terminal_step)
             self.reset()  # TODO: This is a hack to allow remaining agents to "do something". Remove!
             return out
         else:
             return self._single_step(decision_step)
+
+    # < multiagent mod >
+    def _detect_game_over(self, terminal_steps: List[TerminalSteps]) -> bool:
+        """Determine whether the episode has finished.
+
+        Expects the `terminal_steps` to contain only steps that terminated. Note that other steps
+        are possible in the same iteration.
+        This is to keep consistent with Unity's framework but likely will go through refactoring.
+
+        Args:
+            terminal_steps (list): list of all the steps that terminated.
+        """
+        return (
+            (self.termination_mode == TerminationMode.ANY and len(terminal_steps) > 0)
+            or (
+                self.termination_mode == TerminationMode.MAJORITY
+                and len(terminal_steps) > 0.5 * self.num_groups
+            )
+            or (
+                self.termination_mode == TerminationMode.ALL
+                and len(terminal_steps) == self.num_groups
+            )
+        )
 
 
 class RLLibWrapper(gym.core.Wrapper, MultiAgentEnv):

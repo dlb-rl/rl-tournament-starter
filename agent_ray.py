@@ -15,7 +15,9 @@ class RayAgent(Agent):
     RayAgent is an agent that uses ray to train a model.
     """
 
-    def __init__(self, algorithm: str, checkpoint_path: str):
+    def __init__(
+        self, algorithm: str, checkpoint_path: str, policy_name: str = "default"
+    ):
         """Initialize the RayAgent.
         Args:
             algorithm: The Ray RLlib algorithm to use.
@@ -57,7 +59,7 @@ class RayAgent(Agent):
         # load state from checkpoint
         agent.restore(checkpoint_path)
         # get policy for evaluation
-        self.policy = agent.get_policy("learning_agent")
+        self.policy = agent.get_policy(policy_name)
 
     def act(self, observation):
         """The act method is called when the agent is asked to act.
