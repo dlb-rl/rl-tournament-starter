@@ -308,7 +308,6 @@ class MultiAgentUnityWrapper(UnityToGymWrapper):
         if self._detect_game_over(terminal_step):
             self.game_over = True
             out = self._single_step(terminal_step)
-            self.reset()  # TODO: This is a hack to allow remaining agents to "do something". Remove!
             return out
         else:
             return self._single_step(decision_step)

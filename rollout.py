@@ -25,7 +25,6 @@ obs = env.reset()
 team0_reward = 0
 team1_reward = 0
 while True:
-    # soccer ones
     obs, reward, done, info = env.step(
         {
             0: agent1.act(obs[0]),
@@ -35,9 +34,9 @@ while True:
         }
     )
 
-    team0_reward += reward[0]  # + reward[1]
-    team1_reward += reward[1]
-    # team1_reward += reward[2] + reward[3]
+    team0_reward += reward[0] + reward[1]
+    # team1_reward += reward[1]
+    team1_reward += reward[2] + reward[3]
     if max(done.values()):  # if any agent is done
         print("Total Reward: ", team0_reward, " x ", team1_reward)
         team0_reward = 0
