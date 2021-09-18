@@ -24,8 +24,10 @@ def create_env(env_config={}):
 
 
 def create_rllib_env(env_config={}):
-    env_config["worker_id"] = env_config.get("worker_index", 0) * env_config.get(
-        "num_envs_per_worker", 1
-    ) + env_config.get("vector_index", 0)
+    if hasattr(env_config, "worker_index"):
+        env_config["worker_id"] = (
+            env_config.worker_index * env_config.get("num_envs_per_worker", 1)
+            + env_config.vector_index
+        )
     env = create_env(env_config)
     return RLLibWrapper(env)
