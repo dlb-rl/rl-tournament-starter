@@ -1,3 +1,4 @@
+ceia-soccer-twos
 gym==0.19.0
 gym-unity==0.27.0
 mlagents==0.27.0

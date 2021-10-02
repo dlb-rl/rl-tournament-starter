@@ -36,19 +36,17 @@ if __name__ == "__main__":
             },
             "env": "Soccer",
             "env_config": {
-                # TODO update this with the correct env path on your system (the one you downloaded separately)
-                "env_path": "/home/bryan/Documents/rl/env_baselines/unity/soccer/envs/soccer-ones/soccer-ones.x86_64",
                 "num_envs_per_worker": NUM_ENVS_PER_WORKER,
             },
         },
         stop={
-            "training_iteration": 10000,
+            "timesteps_total": 15000000,  # 15M
             # "time_total_s": 14400, # 4h
         },
         checkpoint_freq=100,
         checkpoint_at_end=True,
         local_dir="./ray_results",
-        # restore="./ray_results/...",
+        # restore="./ray_results/PPO_selfplay_1/PPO_Soccer_ID/checkpoint_00X/checkpoint-X",
     )
 
     # Gets best trial based on max accuracy across all training iterations.
