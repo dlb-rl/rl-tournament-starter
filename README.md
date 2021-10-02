@@ -1,6 +1,6 @@
 # CEIA RL Course Tournament Starter Kit
 
-Example training/testing scripts for our soccer-twos-env.
+Example training/testing scripts for our [Soccer-Twos](https://github.com/bryanoliveira/soccer-twos-env) environment.
 
 ## Requirements
 
