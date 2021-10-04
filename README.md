@@ -5,7 +5,7 @@ Example training/testing scripts for our [Soccer-Twos](https://github.com/bryano
 ## Requirements
 
 - Python 3.8
-- [requirements.txt](https://github.com/bryanoliveira/tournament-starter/blob/main/requirements.txt)
+- See [requirements.txt](requirements.txt)
 
 ## Usage
 
