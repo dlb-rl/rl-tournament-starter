@@ -1,7 +1,7 @@
 import ray
 from ray import tune
 
-from utils import create_rllib_env
+from utils import EnvType, create_rllib_env
 
 
 NUM_ENVS_PER_WORKER = 1
@@ -11,14 +11,14 @@ if __name__ == "__main__":
     ray.init()
 
     tune.registry.register_env("Soccer", create_rllib_env)
-    temp_env = create_rllib_env()
+    temp_env = create_rllib_env({"type": EnvType.team_vs_policy})
     obs_space = temp_env.observation_space
     act_space = temp_env.action_space
     temp_env.close()
 
     analysis = tune.run(
         "PPO",
-        name="PPO_selfplay_1",
+        name="PPO_ppo_1",
         config={
             # system settings
             "num_gpus": 1,
@@ -27,16 +27,10 @@ if __name__ == "__main__":
             "log_level": "INFO",
             "framework": "torch",
             # RL setup
-            "multiagent": {
-                "policies": {
-                    "default": (None, obs_space, act_space, {}),
-                },
-                "policy_mapping_fn": tune.function(lambda _: "default"),
-                "policies_to_train": ["default"],
-            },
             "env": "Soccer",
             "env_config": {
                 "num_envs_per_worker": NUM_ENVS_PER_WORKER,
+                "type": EnvType.team_vs_policy,
             },
         },
         stop={
