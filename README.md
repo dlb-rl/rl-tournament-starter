@@ -12,7 +12,7 @@ Example training/testing scripts for our [Soccer-Twos](https://github.com/bryano
 - Clone this repository
 - Install the requirements: `pip install -r requirements.txt`
 - Run `python example_random.py` to watch a random agent play the game
-- Run `python example_ray_ma_selfplay.py` to train with multiagent self-play using [Ray RLLib](https://docs.ray.io/en/latest/rllib.html)
+- Run `python example_ray_team_vs_random.py` to train team vs team against a random agent using [Ray RLLib](https://docs.ray.io/en/latest/rllib.html)
 
 You may also run this environment [on Colab](https://colab.research.google.com/drive/1awcOdo8RU9UdaSRKuqUjvaOTF2O17-os?usp=sharing).
 
