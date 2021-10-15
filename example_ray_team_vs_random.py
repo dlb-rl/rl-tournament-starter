@@ -11,14 +11,10 @@ if __name__ == "__main__":
     ray.init()
 
     tune.registry.register_env("Soccer", create_rllib_env)
-    temp_env = create_rllib_env({"type": EnvType.team_vs_policy})
-    obs_space = temp_env.observation_space
-    act_space = temp_env.action_space
-    temp_env.close()
 
     analysis = tune.run(
         "PPO",
-        name="PPO_ppo_1",
+        name="PPO_1",
         config={
             # system settings
             "num_gpus": 1,
