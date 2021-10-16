@@ -1,11 +1,12 @@
 import soccer_twos
 
-env = soccer_twos.make(render=True)
+env = soccer_twos.make(render=True, flatten_branched=True)
 print("Observation Space: ", env.observation_space.shape)
-print("Action Space: ", env.action_space.shape)
+print("Action Space: ", env.action_space)
 
 team0_reward = 0
 team1_reward = 0
+env.reset()
 while True:
     obs, reward, done, info = env.step(
         {

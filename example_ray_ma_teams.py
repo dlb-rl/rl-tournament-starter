@@ -1,7 +1,8 @@
 import ray
 from ray import tune
+from soccer_twos import EnvType
 
-from utils import EnvType, create_rllib_env
+from utils import create_rllib_env
 
 
 NUM_ENVS_PER_WORKER = 1
@@ -11,7 +12,7 @@ if __name__ == "__main__":
     ray.init()
 
     tune.registry.register_env("Soccer", create_rllib_env)
-    temp_env = create_rllib_env({"type": EnvType.multiagent_team})
+    temp_env = create_rllib_env({"variation": EnvType.multiagent_team})
     obs_space = temp_env.observation_space
     act_space = temp_env.action_space
     temp_env.close()
@@ -37,7 +38,7 @@ if __name__ == "__main__":
             "env": "Soccer",
             "env_config": {
                 "num_envs_per_worker": NUM_ENVS_PER_WORKER,
-                "type": EnvType.multiagent_team,
+                "variation": EnvType.multiagent_team,
             },
         },
         stop={

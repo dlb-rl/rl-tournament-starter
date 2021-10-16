@@ -1,7 +1,8 @@
 import ray
 from ray import tune
+from soccer_twos import EnvType
 
-from utils import EnvType, create_rllib_env
+from utils import create_rllib_env
 
 
 NUM_ENVS_PER_WORKER = 1
@@ -26,7 +27,7 @@ if __name__ == "__main__":
             "env": "Soccer",
             "env_config": {
                 "num_envs_per_worker": NUM_ENVS_PER_WORKER,
-                "type": EnvType.team_vs_policy,
+                "variation": EnvType.team_vs_policy,
             },
         },
         stop={
