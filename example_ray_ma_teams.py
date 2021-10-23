@@ -5,7 +5,7 @@ from soccer_twos import EnvType
 from utils import create_rllib_env
 
 
-NUM_ENVS_PER_WORKER = 1
+NUM_ENVS_PER_WORKER = 3
 
 
 if __name__ == "__main__":
