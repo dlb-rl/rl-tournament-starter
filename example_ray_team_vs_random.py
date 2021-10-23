@@ -28,6 +28,7 @@ if __name__ == "__main__":
             "env_config": {
                 "num_envs_per_worker": NUM_ENVS_PER_WORKER,
                 "variation": EnvType.team_vs_policy,
+                "multiagent": False,
             },
         },
         stop={
