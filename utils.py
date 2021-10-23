@@ -26,4 +26,7 @@ def create_rllib_env(env_config: dict = {}):
             + env_config.vector_index
         )
     env = soccer_twos.make(**env_config)
+    if "multiagent" in env_config and not env_config["multiagent"]:
+        # is multiagent by default, is only disabled if explicitly set to False
+        return env
     return RLLibWrapper(env)
