@@ -25,14 +25,14 @@ To submit an agent for the competition you must follow this instructions:
 - Test your agent module as described in the next section
 - Compress your agent's module folder as `.zip` and e-mail it to bryanlmoliveira@gmail.com.
 
-See `example_agent/` module for reference.
+See `example_player_agent/` or `example_team_agent/` module for reference.
 
 ## Testing/Evaluating
 
 Use the environment's rollout tool to test your module before submission:
 
-`python -m soccer_twos.watch -m example_agent`
+`python -m soccer_twos.watch -m example_player_agent`
 
 You may also run your agent against our [pre-trained baseline (download)](https://drive.google.com/file/d/1WEjr48D7QG9uVy1tf4GJAZTpimHtINzE/view?usp=sharing). Extract the `ceia_baseline_agent` folder to this project's folder and run:
 
-`python -m soccer_twos.watch -m1 example_agent -m2 ceia_baseline_agent`
+`python -m soccer_twos.watch -m1 example_player_agent -m2 ceia_baseline_agent`
