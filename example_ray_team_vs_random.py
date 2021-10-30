@@ -5,7 +5,7 @@ from soccer_twos import EnvType
 from utils import create_rllib_env
 
 
-NUM_ENVS_PER_WORKER = 1
+NUM_ENVS_PER_WORKER = 5
 
 
 if __name__ == "__main__":
@@ -19,7 +19,7 @@ if __name__ == "__main__":
         config={
             # system settings
             "num_gpus": 1,
-            "num_workers": 6,
+            "num_workers": 8,
             "num_envs_per_worker": NUM_ENVS_PER_WORKER,
             "log_level": "INFO",
             "framework": "torch",
@@ -30,9 +30,13 @@ if __name__ == "__main__":
                 "variation": EnvType.team_vs_policy,
                 "multiagent": False,
             },
+            "model": {
+                "vf_share_layers": True,
+                "fcnet_hiddens": [512, 512],
+            },
         },
         stop={
-            "timesteps_total": 15000000,  # 15M
+            "timesteps_total": 20000000,  # 15M
             # "time_total_s": 14400, # 4h
         },
         checkpoint_freq=100,

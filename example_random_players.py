@@ -1,6 +1,6 @@
 import soccer_twos
 
-env = soccer_twos.make(render=True, flatten_branched=True)
+env = soccer_twos.make(render=True)
 print("Observation Space: ", env.observation_space.shape)
 print("Action Space: ", env.action_space)
 

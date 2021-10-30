@@ -5,7 +5,7 @@ from soccer_twos import EnvType
 from utils import create_rllib_env
 
 
-NUM_ENVS_PER_WORKER = 3
+NUM_ENVS_PER_WORKER = 5
 
 
 if __name__ == "__main__":
@@ -31,6 +31,9 @@ if __name__ == "__main__":
                 "multiagent": False,
                 "flatten_branched": True,
                 "single_player": True,
+            },
+            "model": {
+                "fcnet_hiddens": [512, 256],
             },
         },
         stop={
