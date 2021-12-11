@@ -16,20 +16,13 @@ Example training/testing scripts for our [Soccer-Twos](https://github.com/bryano
 
 You may also run this environment [on Colab](https://colab.research.google.com/drive/1awcOdo8RU9UdaSRKuqUjvaOTF2O17-os?usp=sharing).
 
-## Tournament submission
+### Packing Your Agent
 
-To submit an agent for the competition you must follow this instructions:
+To pack an agent for the target environment you must implement a class that inherits from `soccer_twos.AgentInterface` and implements an `act` method. See `example_player_agent/` or `example_team_agent/` module for reference.
 
-- Implement a class that inherits from `soccer_twos.AgentInterface` and implements an `act` method
-- Fill in your agent's information in the `README.md` file (agent name, authors & emails, and description)
-- Test your agent module as described in the next section
-- Compress your agent's module folder as `.zip` and e-mail it to bryanlmoliveira@gmail.com.
+### Testing/Evaluating
 
-See `example_player_agent/` or `example_team_agent/` module for reference.
-
-## Testing/Evaluating
-
-Use the environment's rollout tool to test your module before submission:
+Use the environment's rollout tool to test your agent module:
 
 `python -m soccer_twos.watch -m example_player_agent`
 
